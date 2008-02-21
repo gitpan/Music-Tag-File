@@ -1,3 +1,8 @@
+Release Name: 0.29
+===========================
+* Kwalitee Changes
+* Added no_savecover and no_savelyrics
+
 Release Name: 0.28
 ===========================
 * Split off from Music::Tag distribution

@@ -1,6 +1,5 @@
 package Music::Tag::File;
-our $VERSION = 0.28;
-our @AUTOPLUGIN = qw();
+our $VERSION = 0.29;
 
 # Copyright (c) 2007 Edward Allen III. Some rights reserved.
 #
@@ -147,15 +146,15 @@ sub get_tag {
         my $cfname    = File::Spec->catdir($dname, "cover.jpg");
         if ( -e $fname ) {
             $self->tagchange( "COVER ART", "from folder.jpg" );
-            $self->info->picture( $self->cover_art($fname) );
+            $self->info->picture( $self->_cover_art($fname) );
         }
         elsif ( -e $pfname ) {
             $self->tagchange( "COVER ART", "from folder.png" );
-            $self->info->picture( $self->cover_art($pfname) );
+            $self->info->picture( $self->_cover_art($pfname) );
         }
         elsif ( -e $cfname ) {
             $self->tagchange( "COVER ART", "from cover.jpg" );
-            $self->info->picture( $self->cover_art($cfname) );
+            $self->info->picture( $self->_cover_art($cfname) );
         }
 
     }
@@ -166,7 +165,7 @@ sub get_tag {
         $fname =~ s/\.[^\.]*$/.txt/;
         if ( -e "$fname" ) {
             $self->tagchange( "LYRICS", "from $fname" );
-			my $l = $self->slurp_file($fname);
+			my $l = $self->_slurp_file($fname);
             $self->info->lyrics($l);
             $l =~ s/\n\r?/ \/ /g;
             $self->tagchange( "LYRICS", substr( $l, 0, 40 ) );
@@ -186,7 +185,7 @@ sub get_tag {
 		#if ($f =~ /\.txt$/i) {
 			#unless ($self->info->lyrics) {
 				#$self->tagchange( "LYRICS", "from $fname" );
-				#my $l = $self->slurp_file($fname);
+				#my $l = $self->_slurp_file($fname);
 				#$self->info->lyrics($l);
 				#$l =~ s/\n\r?/ \/ /g;
 				#$self->tagchange( "LYRICS", substr( $l, 0, 40 ) );
@@ -195,7 +194,7 @@ sub get_tag {
 		if ($f =~ /\.jpg$/i) {
 			unless ($self->info->picture) {
 				$self->tagchange( "COVER ART", "from $f" );
-				$self->info->picture( $self->cover_art($fname) );
+				$self->info->picture( $self->_cover_art($fname) );
 			}
 		}
 	}
@@ -205,7 +204,7 @@ sub get_tag {
     return $self;
 }
 
-sub slurp_file {
+sub _slurp_file {
 	my $self = shift;
 	my $fname = shift;
 	local *IN;
@@ -216,7 +215,7 @@ sub slurp_file {
 	return $l;
 }
 
-sub cover_art {
+sub _cover_art {
     my $self    = shift;
     my $picture = shift;
 	my ($vol, $root, $file) = File::Spec->splitpath($picture);
@@ -302,11 +301,22 @@ sub save_lyrics {
 
 sub set_tag {
     my $self = shift;
-    $self->save_cover( $self->info );
-    unless ( $self->info->filename =~ /\.mp3$/i ) {
+	unless ( $self->options("no_savecover")) {
+		$self->save_cover( $self->info );
+	}
+    unless ( $self->options("no_savelyrics") or $self->info->filename =~ /\.mp3$/i ) {
         $self->save_lyrics( $self->info );
     }
     return $self;
+}
+
+sub default_options {
+	{
+		lyricsoverwrite => 0,
+		coveroverwrite => 0,
+		no_savecover => 0,
+		no_savelyrics => 0,
+	}
 }
 
 =back
@@ -323,7 +333,42 @@ If true will overwrite lyrics with values found by plugin.
 
 If true will overwrite picture with values found by plugin.
 
+=item no_savelyrics
+
+If true will not save lyrics.
+
+=item no_savecover
+
+If true will not save cover.
+
 =back
+
+=head1 METHODS
+
+=over
+
+=item default_options
+
+Returns the default options for the plugin.  
+
+=item set_tag
+
+Saves info such as image files, lyrics, etc. Note: Currently calls save_lyrics method for all files that do not end in .mp3 unless np_savelyrics is set.
+
+=item get_tag
+
+Gathers info from file name, text files, etc.
+
+=item save_lyrics
+
+Save lyrics to a text file. 
+
+=item save_cover
+
+Save cover picture to disk. 
+
+=back
+
 
 =head1 BUGS
 
