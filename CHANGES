@@ -1,0 +1,22 @@
+CHANGES
+	Release Name: 0.40_01
+		*	Started using git and github
+
+		*	Normalized version accross plugins.
+
+		*	POD Changes
+
+		*	Revised Testing
+
+    Release Name: 0.30
+        *   Changed license to allow option of GPL
+
+        *   Started using Pod::Readme
+
+    Release Name: 0.29
+        *   Kwalitee Changes
+
+        *   Added no_savecover and no_savelyrics
+
+    Release Name: 0.28
+        * Split off from Music::Tag distribution

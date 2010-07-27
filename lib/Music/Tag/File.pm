@@ -1,89 +1,28 @@
 package Music::Tag::File;
-our $VERSION = 0.29;
+use strict;
+use warnings;
+our $VERSION = .40_01;
 
 # Copyright (c) 2007 Edward Allen III. Some rights reserved.
+
 #
-## This program is free software; you can redistribute it and/or
-## modify it under the terms of the Artistic License, distributed
-## with Perl.
+# You may distribute under the terms of either the GNU General Public
+# License or the Artistic License, as specified in the README file.
 #
 
-=pod
 
-=head1 NAME
-
-Music::Tag::File - Plugin module for Music::Tag to get information from filename and directory entries. 
-
-=head1 SYNOPSIS
-
-	use Music::Tag
-
-	my $filename = "/var/lib/music/artist/album/track.mp3";
-
-	my $info = Music::Tag->new($filename, { quiet => 1 });
-
-	$info->add_plugin("File");
-	$info->get_info();
-	   
-	# Following prints "artist"
-	print "Artist is ", $info->artist;
-
-=head1 DESCRIPTION
-
-Music::Tag::File is used to guess information about a music file from its filename, directory name, or contents of the directory it resides in.
-
-This plugin will not overwrite values found by other plugins.
-
-=head1 REQUIRED VALUES
-
-No values are required (except filename, which is usually provided on object creation). 
-
-=head1 SET VALUES
-
-=cut
-
-use strict;
 use File::Spec;
 
 #use Image::Magick;
-our @ISA = qw(Music::Tag::Generic);
+use base qw(Music::Tag::Generic);
 
-=over 4
+sub set_values {
+	return qw( picture artist album title booklet lyrics track disc);
+}
 
-=item album
-
-Derived from directory file is in.
-
-=item aritst
-
-Derived from parent directory of directory file is in.
-
-=item tracknum
-
-Derived from first number(s) found in file.
-
-=item track
-
-From file with initial numbers removed.
-
-=item disc
-
-Set to 1 of 1 if no value set.
-
-=item picture
-
-Looks for folder.png, folder.jpg, or cover.jpg
-
-=item lyrics
-
-Looks for file of same name as filename with .txt extension.
-
-=item booklet
-
-Looks for any pdf file.
-
-=cut
-
+sub saved_values {
+	return qw( picture booklet lyrics );
+}
 
 sub get_tag {
     my $self     = shift;
@@ -192,7 +131,7 @@ sub get_tag {
 				#}
 		#}
 		if ($f =~ /\.jpg$/i) {
-			unless ($self->info->picture) {
+			unless ($self->info->picture_exists) {
 				$self->tagchange( "COVER ART", "from $f" );
 				$self->info->picture( $self->_cover_art($fname) );
 			}
@@ -261,7 +200,7 @@ sub save_cover {
         }
         $self->status("Saving cover image to $filename");
         unless ( open OUT, ">$filename" ) {
-            $self->status("Error writing to $filename: $!, skipping.");
+            $self->error("Error writing to $filename: $!, skipping.");
             return undef;
         }
         my $b = 0;
@@ -319,6 +258,109 @@ sub default_options {
 	}
 }
 
+1;
+
+__END__
+=pod
+
+=for changes stop
+
+=head1 NAME
+
+Music::Tag::File - Plugin module for Music::Tag to get information from filename and directory entries. 
+
+=for readme stop
+
+=head1 SYNOPSIS
+
+	use Music::Tag
+
+	my $filename = "/var/lib/music/artist/album/track.mp3";
+
+	my $info = Music::Tag->new($filename, { quiet => 1 });
+
+	$info->add_plugin("File");
+	$info->get_info();
+	   
+	# Following prints "artist"
+	print "Artist is ", $info->artist;
+
+=for readme continue
+
+=head1 DESCRIPTION
+
+Music::Tag::File is a Music::Tag plugin used to guess information about a music file from its filename, directory name, or contents of the directory it resides in.
+
+This plugin will not overwrite values found by other plugins.
+
+Music::Tag::File objects must be created by Music::Tag.
+
+=begin readme
+
+=head1 INSTALLATION
+
+To install this module type the following:
+
+   perl Makefile.PL
+   make
+   make test
+   make install
+
+=head1 DEPENDENCIES
+
+This module requires these other modules and libraries:
+
+   Music::Tag
+   File::Spec
+
+=head1 TEST FILES
+
+Included test files are based on the sample file for Audio::M4P.  For testing only.
+
+=end readme
+
+=for readme stop
+
+=head1 REQUIRED DATA VALUES
+
+No values are required (except filename, which is usually provided on object creation). 
+
+=head1 SET DATA VALUES
+
+=over 4
+
+=item album
+
+Derived from directory file is in.
+
+=item artist
+
+Derived from parent directory of directory file is in.
+
+=item tracknum
+
+Derived from first number(s) found in file name.
+
+=item track
+
+Derived from filename with initial numbers removed.
+
+=item disc
+
+Set to 1 of 1 if no value set.
+
+=item picture
+
+Looks for folder.png, folder.jpg, or cover.jpg
+
+=item lyrics
+
+Looks for file of same name as filename with .txt extension.
+
+=item booklet
+
+Looks for any pdf file.
+
 =back
 
 =head1 OPTIONS
@@ -347,37 +389,51 @@ If true will not save cover.
 
 =over
 
-=item default_options
+=item B<default_options()>
 
 Returns the default options for the plugin.  
 
-=item set_tag
+=item B<set_tag()>
 
 Saves info such as image files, lyrics, etc. Note: Currently calls save_lyrics method for all files that do not end in .mp3 unless np_savelyrics is set.
 
-=item get_tag
+=item B<get_tag()>
 
 Gathers info from file name, text files, etc.
 
-=item save_lyrics
+=item B<set_values()>
+
+A list of values that can be set by this module.
+
+=item B<saved_values()>
+
+A list of values that can be saved by this module.
+
+=item B<save_lyrics()>
 
 Save lyrics to a text file. 
 
-=item save_cover
+=item B<save_cover()>
 
 Save cover picture to disk. 
 
 =back
 
-
 =head1 BUGS
 
-This method is always unreliable unless great care is taken in file naming. 
+This method of determining information about a music file is always unreliable unless great care is taken in file naming.
 
 =head1 SEE ALSO
 
-L<Music::Tag>, L<Music::Tag::Amazon>, L<Music::Tag::FLAC>, L<Music::Tag::Lyrics>,
-L<Music::Tag::M4A>, L<Music::Tag::MP3>, L<Music::Tag::MusicBrainz>, L<Music::Tag::OGG>, L<Music::Tag::Option>,
+L<Music::Tag>
+
+=head1 SOURCE
+
+Source is available at github: L<http://github.com/riemann42/Music-Tag-File|http://github.com/riemann42/Music-Tag-File>.
+
+=head1 BUG TRACKING
+
+Please use github for bug tracking: L<http://github.com/riemann42/Music-Tag-File/issues|http://github.com/riemann42/Music-Tag-File/issues>.
 
 =head1 AUTHOR 
 
@@ -387,12 +443,28 @@ Edward Allen III <ealleniii _at_ cpan _dot_ org>
 
 Copyright (c) 2007 Edward Allen III. Some rights reserved.
 
-This program is free software; you can redistribute it and/or
-modify it under the terms of the Artistic License, distributed
-with Perl.
+=head1 LICENSE
 
+This program is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself, either:
 
-=cut
+a) the GNU General Public License as published by the Free
+Software Foundation; either version 1, or (at your option) any
+later version, or
 
-1;
+b) the "Artistic License" which comes with Perl.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See either
+the GNU General Public License or the Artistic License for more details.
+
+You should have received a copy of the Artistic License with this
+Kit, in the file named "Artistic".  If not, I'll be glad to provide one.
+
+You should also have received a copy of the GNU General Public License
+along with this program in the file named "Copying". If not, write to the
+Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+Boston, MA 02110-1301, USA or visit their web page on the Internet at
+http://www.gnu.org/copyleft/gpl.html.
 
